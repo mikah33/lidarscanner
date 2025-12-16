@@ -1,16 +1,56 @@
-# React + Vite
+# LiDAR Scanner
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+iOS app for creating floor plans using LiDAR scanning and manual CAD input.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **LiDAR Room Scanning** - Use Apple's RoomPlan framework to scan rooms with LiDAR (iPhone 12 Pro+ / iPad Pro 2020+)
+- **Manual CAD Input** - Enter room dimensions manually without LiDAR
+- **2D Floor Plan View** - Interactive 2D floor plan with zoom/pan
+- **3D Floor Plan View** - SceneKit-based 3D visualization with camera controls
+- **Room Editing** - Edit dimensions, position, and colors
+- **Export Options** - Export to JSON, PDF, PNG, or DXF (AutoCAD)
 
-## React Compiler
+## Requirements
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- iOS 16.0+
+- Xcode 15+
+- Device with LiDAR (for scanning) or any iOS device (for manual input)
 
-## Expanding the ESLint configuration
+## Getting Started
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+1. Open `ios/LiDARScanner.xcodeproj` in Xcode
+2. Select your target device
+3. Build and run (Cmd+R)
+
+## Usage
+
+1. **Create a Project** - Tap "New Project" and enter a name
+2. **Add Rooms**:
+   - "Create & Start Scanning" to use LiDAR
+   - "Create Empty Project" then add rooms manually via the menu
+3. **View Floor Plan** - Toggle between 2D and 3D views with the cube icon
+4. **Edit Rooms** - Tap any room to edit dimensions
+5. **Export** - Use the menu to export in various formats
+
+## Project Structure
+
+```
+ios/LiDARScanner/
+├── LiDARScannerApp.swift    # App entry point & ProjectManager
+├── ContentView.swift         # Main navigation & project list
+├── Models/
+│   └── FloorPlanModels.swift # Data models (Room, Door, Window, Project)
+├── Views/
+│   ├── FloorPlanView.swift   # 2D floor plan canvas
+│   ├── FloorPlan3DView.swift # 3D SceneKit viewer
+│   ├── RoomScanView.swift    # LiDAR scanning UI
+│   ├── RoomEditView.swift    # Room editing form
+│   └── ProjectListView.swift # Project list component
+└── Services/
+    └── ExportManager.swift   # Export to JSON/PDF/PNG/DXF
+```
+
+## License
+
+MIT
