@@ -2,7 +2,11 @@ import Foundation
 import SwiftUI
 
 // MARK: - Floor Plan Project
-struct FloorPlanProject: Identifiable, Codable {
+struct FloorPlanProject: Identifiable, Codable, Equatable {
+    static func == (lhs: FloorPlanProject, rhs: FloorPlanProject) -> Bool {
+        lhs.id == rhs.id && lhs.dateModified == rhs.dateModified
+    }
+
     let id: UUID
     var name: String
     var dateCreated: Date

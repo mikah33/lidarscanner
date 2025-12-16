@@ -6,25 +6,24 @@ struct RoomScanView: View {
     let project: FloorPlanProject
     @Binding var isPresented: Bool
 
-    @State private var capturedRoom: CapturedRoom?
-    @State private var isScanning = false
+    @StateObject private var scanController = RoomScanController()
     @State private var showingSaveDialog = false
     @State private var roomName = ""
 
     var body: some View {
         ZStack {
             // RoomPlan Capture View
-            RoomCaptureViewRepresentable(
-                capturedRoom: $capturedRoom,
-                isScanning: $isScanning
-            )
-            .edgesIgnoringSafeArea(.all)
+            RoomCaptureViewContainer(controller: scanController)
+                .edgesIgnoringSafeArea(.all)
 
             // Overlay UI
             VStack {
                 // Top bar
                 HStack {
-                    Button(action: { isPresented = false }) {
+                    Button(action: {
+                        scanController.stopSession()
+                        isPresented = false
+                    }) {
                         Image(systemName: "xmark.circle.fill")
                             .font(.title)
                             .foregroundColor(.white)
@@ -40,10 +39,18 @@ struct RoomScanView: View {
 
                     Spacer()
 
-                    // Placeholder for symmetry
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.title)
-                        .foregroundColor(.clear)
+                    // Done button to finish scanning
+                    Button(action: {
+                        scanController.stopSession()
+                    }) {
+                        Text("Done")
+                            .font(.headline)
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 8)
+                            .background(Color.blue)
+                            .cornerRadius(8)
+                    }
                 }
                 .padding()
 
@@ -51,7 +58,7 @@ struct RoomScanView: View {
 
                 // Bottom controls
                 VStack(spacing: 16) {
-                    if let room = capturedRoom {
+                    if let _ = scanController.capturedRoom {
                         // Room captured - show save button
                         VStack(spacing: 12) {
                             Text("Room Captured!")
@@ -82,10 +89,10 @@ struct RoomScanView: View {
                     } else {
                         // Scanning instructions
                         VStack(spacing: 8) {
-                            if isScanning {
+                            if scanController.isScanning {
                                 Text("Scanning...")
                                     .font(.headline)
-                                Text("Move slowly around the room")
+                                Text("Move slowly around the room, then tap Done")
                                     .font(.subheadline)
                             } else {
                                 Text("Point at the room to start")
@@ -118,12 +125,11 @@ struct RoomScanView: View {
     }
 
     private func resetScan() {
-        capturedRoom = nil
-        isScanning = false
+        scanController.resetScan()
     }
 
     private func saveRoom() {
-        guard let captured = capturedRoom else { return }
+        guard let captured = scanController.capturedRoom else { return }
 
         // Convert RoomPlan data to our Room model
         let room = convertCapturedRoom(captured, name: roomName)
@@ -133,7 +139,7 @@ struct RoomScanView: View {
         projectManager.updateProject(updatedProject)
 
         // Reset for next scan or close
-        capturedRoom = nil
+        scanController.resetScan()
         roomName = "Room \(updatedProject.rooms.count + 1)"
     }
 
@@ -161,9 +167,16 @@ struct RoomScanView: View {
             maxY = max(maxY, dimensions.y)
         }
 
-        let width = Double(maxX - minX) * metersToFeet
-        let length = Double(maxZ - minZ) * metersToFeet
-        let height = Double(maxY) * metersToFeet
+        // Handle case with no walls detected
+        var width: Double = 12
+        var length: Double = 12
+        var height: Double = 9
+
+        if minX != .infinity {
+            width = Double(maxX - minX) * metersToFeet
+            length = Double(maxZ - minZ) * metersToFeet
+            height = Double(maxY) * metersToFeet
+        }
 
         // Find position for new room (place after existing rooms)
         let existingMaxX = project.rooms.map { $0.x + $0.width }.max() ?? 0
@@ -180,107 +193,140 @@ struct RoomScanView: View {
     }
 }
 
-// MARK: - RoomPlan UIKit Integration
-struct RoomCaptureViewRepresentable: UIViewControllerRepresentable {
-    @Binding var capturedRoom: CapturedRoom?
-    @Binding var isScanning: Bool
+// MARK: - Room Scan Controller
+class RoomScanController: ObservableObject {
+    @Published var capturedRoom: CapturedRoom?
+    @Published var isScanning = false
 
-    func makeUIViewController(context: Context) -> RoomCaptureViewController {
-        let controller = RoomCaptureViewController()
-        controller.delegate = context.coordinator
-        return controller
+    var roomCaptureView: RoomCaptureView?
+    private var sessionDelegate: RoomCaptureSessionDelegateHandler?
+    private var viewDelegate: RoomCaptureViewDelegateHandler?
+
+    func setupCaptureView() -> RoomCaptureView {
+        let captureView = RoomCaptureView(frame: .zero)
+        self.roomCaptureView = captureView
+
+        // Create and set delegates
+        let sessionDel = RoomCaptureSessionDelegateHandler(controller: self)
+        let viewDel = RoomCaptureViewDelegateHandler(controller: self)
+        self.sessionDelegate = sessionDel
+        self.viewDelegate = viewDel
+        captureView.captureSession.delegate = sessionDel
+        captureView.delegate = viewDel
+
+        return captureView
     }
 
-    func updateUIViewController(_ uiViewController: RoomCaptureViewController, context: Context) {}
-
-    func makeCoordinator() -> Coordinator {
-        Coordinator(self)
+    func startSession() {
+        guard RoomCaptureSession.isSupported else { return }
+        let config = RoomCaptureSession.Configuration()
+        roomCaptureView?.captureSession.run(configuration: config)
     }
 
-    class Coordinator: NSObject, RoomCaptureViewDelegate, RoomCaptureSessionDelegate {
-        var parent: RoomCaptureViewRepresentable
+    func stopSession() {
+        roomCaptureView?.captureSession.stop()
+    }
 
-        init(_ parent: RoomCaptureViewRepresentable) {
-            self.parent = parent
+    func resetScan() {
+        capturedRoom = nil
+        isScanning = false
+        startSession()
+    }
+
+}
+
+// MARK: - Session Delegate
+class RoomCaptureSessionDelegateHandler: NSObject, RoomCaptureSessionDelegate {
+    weak var controller: RoomScanController?
+
+    init(controller: RoomScanController) {
+        self.controller = controller
+    }
+
+    func captureSession(_ session: RoomCaptureSession, didUpdate room: CapturedRoom) {
+        DispatchQueue.main.async {
+            self.controller?.isScanning = true
         }
+    }
 
-        func captureView(shouldPresent roomDataForProcessing: CapturedRoomData, error: Error?) -> Bool {
-            return true
-        }
+    func captureSession(_ session: RoomCaptureSession, didEndWith data: CapturedRoomData, error: Error?) {
+        // Session ended, process the data
+    }
+}
 
-        func captureView(didPresent processedResult: CapturedRoom, error: Error?) {
-            DispatchQueue.main.async {
-                self.parent.capturedRoom = processedResult
-                self.parent.isScanning = false
-            }
-        }
+// MARK: - View Delegate
+class RoomCaptureViewDelegateHandler: UIViewController, RoomCaptureViewDelegate {
+    weak var controller: RoomScanController?
 
-        func captureSession(_ session: RoomCaptureSession, didUpdate room: CapturedRoom) {
-            DispatchQueue.main.async {
-                self.parent.isScanning = true
-            }
+    init(controller: RoomScanController) {
+        self.controller = controller
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    func captureView(shouldPresent roomDataForProcessing: CapturedRoomData, error: Error?) -> Bool {
+        return true
+    }
+
+    func captureView(didPresent processedResult: CapturedRoom, error: Error?) {
+        DispatchQueue.main.async {
+            self.controller?.capturedRoom = processedResult
+            self.controller?.isScanning = false
         }
     }
 }
 
-// MARK: - RoomCapture ViewController
-class RoomCaptureViewController: UIViewController {
-    var delegate: (RoomCaptureViewDelegate & RoomCaptureSessionDelegate)?
+// MARK: - RoomCaptureView Container
+struct RoomCaptureViewContainer: UIViewRepresentable {
+    @ObservedObject var controller: RoomScanController
 
-    private var roomCaptureView: RoomCaptureView?
-    private var roomCaptureSession: RoomCaptureSession?
-
-    override func viewDidLoad() {
-        super.viewDidLoad()
+    func makeUIView(context: Context) -> UIView {
+        let containerView = UIView(frame: .zero)
 
         // Check for LiDAR support
         guard RoomCaptureSession.isSupported else {
-            showUnsupportedAlert()
-            return
+            let label = UILabel()
+            label.text = "LiDAR not available on this device.\nRequires iPhone 12 Pro+ or iPad Pro 2020+"
+            label.textAlignment = .center
+            label.numberOfLines = 0
+            label.textColor = .white
+            label.translatesAutoresizingMaskIntoConstraints = false
+            containerView.addSubview(label)
+            containerView.backgroundColor = .black
+
+            NSLayoutConstraint.activate([
+                label.centerXAnchor.constraint(equalTo: containerView.centerXAnchor),
+                label.centerYAnchor.constraint(equalTo: containerView.centerYAnchor),
+                label.leadingAnchor.constraint(greaterThanOrEqualTo: containerView.leadingAnchor, constant: 20),
+                label.trailingAnchor.constraint(lessThanOrEqualTo: containerView.trailingAnchor, constant: -20)
+            ])
+
+            return containerView
         }
 
-        setupRoomCapture()
+        let captureView = controller.setupCaptureView()
+        captureView.translatesAutoresizingMaskIntoConstraints = false
+        containerView.addSubview(captureView)
+
+        NSLayoutConstraint.activate([
+            captureView.topAnchor.constraint(equalTo: containerView.topAnchor),
+            captureView.bottomAnchor.constraint(equalTo: containerView.bottomAnchor),
+            captureView.leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
+            captureView.trailingAnchor.constraint(equalTo: containerView.trailingAnchor)
+        ])
+
+        // Start session after a brief delay
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            controller.startSession()
+        }
+
+        return containerView
     }
 
-    override func viewDidAppear(_ animated: Bool) {
-        super.viewDidAppear(animated)
-        startSession()
-    }
-
-    override func viewWillDisappear(_ animated: Bool) {
-        super.viewWillDisappear(animated)
-        stopSession()
-    }
-
-    private func setupRoomCapture() {
-        let captureView = RoomCaptureView(frame: view.bounds)
-        captureView.captureSession.delegate = delegate
-        captureView.delegate = delegate
-        captureView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
-
-        view.addSubview(captureView)
-        self.roomCaptureView = captureView
-        self.roomCaptureSession = captureView.captureSession
-    }
-
-    private func startSession() {
-        let config = RoomCaptureSession.Configuration()
-        roomCaptureSession?.run(configuration: config)
-    }
-
-    private func stopSession() {
-        roomCaptureSession?.stop()
-    }
-
-    private func showUnsupportedAlert() {
-        let alert = UIAlertController(
-            title: "LiDAR Not Available",
-            message: "This device doesn't have a LiDAR scanner. You need an iPhone 12 Pro or newer, or iPad Pro 2020 or newer.",
-            preferredStyle: .alert
-        )
-        alert.addAction(UIAlertAction(title: "OK", style: .default))
-        present(alert, animated: true)
-    }
+    func updateUIView(_ uiView: UIView, context: Context) {}
 }
 
 #Preview {

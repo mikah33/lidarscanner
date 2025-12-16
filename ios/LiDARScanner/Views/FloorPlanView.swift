@@ -11,6 +11,7 @@ struct FloorPlanView: View {
     @State private var showingScanner = false
     @State private var scale: CGFloat = 1.0
     @State private var offset: CGSize = .zero
+    @State private var show3DView = false
 
     // Scale: pixels per foot
     private let pixelsPerFoot: CGFloat = 15
@@ -18,36 +19,47 @@ struct FloorPlanView: View {
     var body: some View {
         GeometryReader { geometry in
             ZStack {
-                // Background
-                Color(.systemGroupedBackground)
-                    .edgesIgnoringSafeArea(.all)
+                if show3DView {
+                    // 3D View
+                    FloorPlan3DView(project: project)
+                } else {
+                    // 2D View
+                    // Background
+                    Color(.systemGroupedBackground)
+                        .edgesIgnoringSafeArea(.all)
 
-                // Floor plan canvas
-                ScrollView([.horizontal, .vertical], showsIndicators: true) {
-                    floorPlanCanvas
-                        .scaleEffect(scale)
-                        .gesture(
-                            MagnificationGesture()
-                                .onChanged { value in
-                                    scale = min(max(value, 0.5), 3.0)
-                                }
-                        )
-                }
-
-                // Floating action buttons
-                VStack {
-                    Spacer()
-                    HStack {
-                        Spacer()
-                        floatingButtons
+                    // Floor plan canvas
+                    ScrollView([.horizontal, .vertical], showsIndicators: true) {
+                        floorPlanCanvas
+                            .scaleEffect(scale)
+                            .gesture(
+                                MagnificationGesture()
+                                    .onChanged { value in
+                                        scale = min(max(value, 0.5), 3.0)
+                                    }
+                            )
                     }
-                    .padding()
+
+                    // Floating action buttons
+                    VStack {
+                        Spacer()
+                        HStack {
+                            Spacer()
+                            floatingButtons
+                        }
+                        .padding()
+                    }
                 }
             }
         }
         .navigationTitle(project.name)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button(action: { show3DView.toggle() }) {
+                    Image(systemName: show3DView ? "square.grid.2x2" : "cube")
+                }
+            }
             ToolbarItem(placement: .primaryAction) {
                 Menu {
                     Button(action: { showingScanner = true }) {
@@ -55,6 +67,10 @@ struct FloorPlanView: View {
                     }
                     Button(action: { showingAddRoom = true }) {
                         Label("Add Room Manually", systemImage: "plus.rectangle")
+                    }
+                    Divider()
+                    Button(action: { show3DView.toggle() }) {
+                        Label(show3DView ? "View 2D" : "View 3D", systemImage: show3DView ? "square.grid.2x2" : "cube")
                     }
                     Divider()
                     Button(action: { showingExportSheet = true }) {

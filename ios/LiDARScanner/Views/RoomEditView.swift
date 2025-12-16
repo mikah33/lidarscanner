@@ -114,33 +114,6 @@ struct RoomEditView: View {
     }
 }
 
-// MARK: - Project List View (for reference)
-struct ProjectListView: View {
-    @EnvironmentObject var projectManager: ProjectManager
-
-    var body: some View {
-        List {
-            ForEach(projectManager.projects) { project in
-                NavigationLink(destination: FloorPlanView(project: project)) {
-                    VStack(alignment: .leading) {
-                        Text(project.name)
-                            .font(.headline)
-                        Text("\(project.rooms.count) rooms • \(Int(project.totalArea)) sq ft")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                }
-            }
-            .onDelete { indexSet in
-                for index in indexSet {
-                    projectManager.deleteProject(projectManager.projects[index])
-                }
-            }
-        }
-        .navigationTitle("Projects")
-    }
-}
-
 #Preview {
     RoomEditView(
         room: Room(name: "Living Room", width: 18, length: 24, height: 9),

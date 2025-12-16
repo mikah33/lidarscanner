@@ -7,16 +7,17 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		A1000001 /* LiDARScannerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000001; };
-		A1000002 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000002; };
-		A1000003 /* RoomCaptureController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000003; };
-		A1000004 /* FloorPlanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000004; };
-		A1000005 /* FloorPlanModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000005; };
-		A1000006 /* ExportManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000006; };
-		A1000007 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A2000007; };
-		A1000008 /* RoomScanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000008; };
-		A1000009 /* ProjectListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000009; };
-		A1000010 /* RoomEditView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000010; };
+		A1000001 /* LiDARScannerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000001 /* LiDARScannerApp.swift */; };
+		A1000002 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000002 /* ContentView.swift */; };
+		A1000003 /* RoomCaptureController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000003 /* RoomCaptureController.swift */; };
+		A1000004 /* FloorPlanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000004 /* FloorPlanView.swift */; };
+		A1000005 /* FloorPlanModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000005 /* FloorPlanModels.swift */; };
+		A1000006 /* ExportManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000006 /* ExportManager.swift */; };
+		A1000007 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A2000007 /* Assets.xcassets */; };
+		A1000008 /* RoomScanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000008 /* RoomScanView.swift */; };
+		A1000009 /* ProjectListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000009 /* ProjectListView.swift */; };
+		A1000010 /* RoomEditView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000010 /* RoomEditView.swift */; };
+		C6CE1C222EF128BC0000E170 /* FloorPlan3DView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C6CE1C212EF128BC0000E170 /* FloorPlan3DView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -32,6 +33,7 @@
 		A2000010 /* RoomEditView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoomEditView.swift; sourceTree = "<group>"; };
 		A3000001 /* LiDARScanner.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LiDARScanner.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A3000002 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		C6CE1C212EF128BC0000E170 /* FloorPlan3DView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloorPlan3DView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -78,6 +80,7 @@
 		A5000004 /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				C6CE1C212EF128BC0000E170 /* FloorPlan3DView.swift */,
 				A2000008 /* RoomScanView.swift */,
 				A2000004 /* FloorPlanView.swift */,
 				A2000009 /* ProjectListView.swift */,
@@ -181,6 +184,7 @@
 				A1000008 /* RoomScanView.swift in Sources */,
 				A1000009 /* ProjectListView.swift in Sources */,
 				A1000010 /* RoomEditView.swift in Sources */,
+				C6CE1C222EF128BC0000E170 /* FloorPlan3DView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
